@@ -31,12 +31,12 @@ import (
 )
 
 // Filter initialize the middleware, you must provide the HostName of the server on which yours services resides
-func Filter(hostName string) func(next http.Handler) http.Handler {
+func Filter(hostName string) (fn func(next http.Handler) http.Handler) {
 	if len(hostName) == 0 {
 		panic("You must provide the HostName, otherwise protection against DNS rebinding doesn't work")
 	}
 
-	return func(next http.Handler) http.Handler {
+	fn = func(next http.Handler) http.Handler {
 		filter := func(w http.ResponseWriter, r *http.Request) {
 			// protection against DNS rebinding
 			if r.Header.Get("Host") != hostName {
@@ -49,4 +49,6 @@ func Filter(hostName string) func(next http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(filter)
 	}
+
+	return fn
 }
