@@ -44,3 +44,27 @@ func TestGoodHost(t *testing.T) {
 
 	assertResponse(t, res, 200)
 }
+
+func TestSomeGoodHost(t *testing.T) {
+	f := Filters("example.com", "google.com", "facebook.com")
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
+	req.Header.Add("Host", "example.com")
+
+	f(testHandler).ServeHTTP(res, req)
+
+	assertResponse(t, res, 200)
+}
+
+func TestSomeBadHost(t *testing.T) {
+	f := Filters("example.com", "google.com", "facebook.com")
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
+	req.Header.Add("Host", "malicius.com")
+
+	f(testHandler).ServeHTTP(res, req)
+
+	assertResponse(t, res, 501)
+}

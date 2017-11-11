@@ -23,6 +23,28 @@ func main() {
         })
         http.ListenAndServe(":3000", dnsr(handler))
 }
+
+
+Example:
+package main
+
+import (
+  "net/http"
+  dnsr "github.com/vpxyz/dnsrebinding"
+)
+
+func main() {
+        dnsr.Filters("example.com", "test.com", "test.me")
+
+        handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                if r.Method == "GET" {
+		           w.Header().Set("Content-Type", "application/json")
+		           w.Write([]byte("{\"hello\": \"world\"}"))
+		           return
+	           }
+        })
+        http.ListenAndServe(":3000", dnsr(handler))
+}
 */
 package dnsrebinding
 
@@ -30,7 +52,36 @@ import (
 	"net/http"
 )
 
-// Filter initialize the middleware, you must provide the HostName of the server on which yours services resides
+// Filters initialize the middleware, you must provide one or more hostname of the server on which yours services resides.
+// This one can be usefull if your server has multiple hostnames.
+func Filters(hostsName ...string) (fn func(next http.Handler) http.Handler) {
+	if len(hostsName) == 0 {
+		panic("You must provide one or more HostName, otherwise protection against DNS rebinding doesn't work")
+	}
+
+	hn := make(map[string]bool, len(hostsName))
+
+	for _, h := range hostsName {
+		hn[h] = true
+	}
+
+	fn = func(next http.Handler) http.Handler {
+		filter := func(w http.ResponseWriter, r *http.Request) {
+			if _, ok := hn[r.Header.Get("Host")]; !ok {
+				w.WriteHeader(http.StatusNotImplemented)
+
+				// exit chain with status HTTP 501
+				return
+			}
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(filter)
+	}
+
+	return fn
+}
+
+// Filter initialize the middleware, you must provide the hostname of the server on which yours services resides.
 func Filter(hostName string) (fn func(next http.Handler) http.Handler) {
 	if len(hostName) == 0 {
 		panic("You must provide the HostName, otherwise protection against DNS rebinding doesn't work")
@@ -38,10 +89,9 @@ func Filter(hostName string) (fn func(next http.Handler) http.Handler) {
 
 	fn = func(next http.Handler) http.Handler {
 		filter := func(w http.ResponseWriter, r *http.Request) {
-			// protection against DNS rebinding
 			if r.Header.Get("Host") != hostName {
-				// respond with 501 error code
 				w.WriteHeader(http.StatusNotImplemented)
+
 				// exit chain with status HTTP 501
 				return
 			}

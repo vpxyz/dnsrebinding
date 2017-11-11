@@ -34,5 +34,29 @@ Example
  
 ```
 
+If your server has multiple hostnames:
+
+``` go
+package main
+
+import (
+  "net/http"
+  dnsr "github.com/vpxyz/dnsrebinding"
+)
+
+func main() {
+        dnsr.Filters("example.com", "test.com", "test.me")
+
+        handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                if r.Method == "GET" {
+		           w.Header().Set("Content-Type", "application/json")
+		           w.Write([]byte("{\"hello\": \"world\"}"))
+		           return
+	           }
+        })
+        http.ListenAndServe(":3000", dnsr(handler))
+}
+```
+
 
 
