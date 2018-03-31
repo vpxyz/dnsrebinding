@@ -5,7 +5,9 @@ DNSRebinding is a simple net/http middleware that protect yours services against
 
 This middleware increases the security level of CORS filter (see https://www.w3.org/TR/cors/#resource-security).
 
-The usage is very simple, just pass the host name of the server on which the resource resides.
+The usage is very simple, just pass the host name of the server on which the resource resides, and the statusCode to return in case of dns rebinding attack.
+
+As default, if the provvided statusCode isn't valid, returns http.StatusNotImplemented.
 
 Example
 -------
@@ -20,7 +22,7 @@ Example
  )
 
  func main() {
-         dnsr.Filter("example.com")
+         dnsr.Filter(http.StatusNotAcceptable, "example.com")
 
          handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
                  if r.Method == "GET" {
@@ -45,7 +47,7 @@ import (
 )
 
 func main() {
-        dnsr.Filters("example.com", "test.com", "test.me")
+        dnsr.Filters(http.StatusNotFound, "example.com", "test.com", "test.me")
 
         handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
                 if r.Method == "GET" {

@@ -22,7 +22,7 @@ func assertResponse(t *testing.T, res *httptest.ResponseRecorder, responseCode i
 }
 
 func TestBadHost(t *testing.T) {
-	f := Filter("example.com")
+	f := Filter(http.StatusNotImplemented, "example.com")
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
@@ -30,11 +30,11 @@ func TestBadHost(t *testing.T) {
 
 	f(testHandler).ServeHTTP(res, req)
 
-	assertResponse(t, res, 501)
+	assertResponse(t, res, http.StatusNotImplemented)
 }
 
 func TestGoodHost(t *testing.T) {
-	f := Filter("example.com")
+	f := Filter(http.StatusNotImplemented, "example.com")
 
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
@@ -46,11 +46,11 @@ func TestGoodHost(t *testing.T) {
 }
 
 func TestSomeGoodHost(t *testing.T) {
-	f := Filters("example.com", "google.com", "facebook.com")
+	f := Filter(http.StatusNotImplemented, "example.com", "foo.com", "bar.com")
 
 	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
-	req.Header.Add("Host", "example.com")
+	req, _ := http.NewRequest("GET", "http://foo.com/foo", nil)
+	req.Header.Add("Host", "foo.com")
 
 	f(testHandler).ServeHTTP(res, req)
 
@@ -58,13 +58,24 @@ func TestSomeGoodHost(t *testing.T) {
 }
 
 func TestSomeBadHost(t *testing.T) {
-	f := Filters("example.com", "google.com", "facebook.com")
+	f := Filter(http.StatusNotImplemented, "example.com", "foo.com", "bar.com")
 
 	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "http://example.com/foo", nil)
+	req, _ := http.NewRequest("GET", "http://foo.com/bar", nil)
 	req.Header.Add("Host", "malicius.com")
 
 	f(testHandler).ServeHTTP(res, req)
 
-	assertResponse(t, res, 501)
+	assertResponse(t, res, http.StatusNotImplemented)
+}
+
+func TestNoHost(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			// panic it's ok
+			t.Log("Recover from panic due to empty hostname")
+		}
+	}()
+
+	Filter(http.StatusNotImplemented, "")
 }
