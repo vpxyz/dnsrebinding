@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-        dnsr.Filters(http.StatusNotFound, "example.com", "test.com", "test.me")
+        dnsr.Filter(http.StatusNotFound, "example.com", "test.com", "test.me")
 
         handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
                 if r.Method == "GET" {
